@@ -3,13 +3,19 @@ body {
     margin: 30px;
     background: #f5f5f5;
 }
-h1 {
+.spacer {
+    height: 40px;
+}
+h1, h2 {
     text-align: center;
+    letter-spacing: 0.2rem;
 }
 .stats {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-around;
     margin-top: 40px;
+    gap: 30px;
 }
 .card {
     background: white;
@@ -28,6 +34,15 @@ h1 {
     font-size: 1em;
     color: #555;
 }
+
+.row {
+    display: flex;
+    gap: 30px;
+}
+.row > div {
+    width: 50%;
+}
+
 button {
     display: block;
     margin: 30px auto;
@@ -41,4 +56,112 @@ button {
 }
 button:hover {
     background: #0056b3;
+}
+
+.section {
+    height: 50vh;
+}
+
+.records-container {
+    overflow-y: auto;
+    max-height: 100%;
+    border: 1px solid #ccc;
+}
+
+.log-entry {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #ccc;
+    font-family: monospace;
+}
+.log-entry:last-child {
+    border-bottom: none !important;
+}
+.log-entry .bullet {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+.log-entry .timestamp {
+    color: #666;
+    margin-right: 10px;
+}
+
+.slow-entry {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #ffa500;
+    font-family: monospace;
+    background-color: #fff8e1; /* light orange background */
+}
+.slow-entry:last-child {
+    border-bottom: none !important;
+}
+.slow-entry .bullet {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+    background-color: orange;
+}
+
+
+/* Dark theme overrides */
+body.dark {
+    background-color: #1e1e1e;
+    color: white;
+}
+body.dark .card {
+    background-color: #333;
+    color: white;
+}
+body.dark .card p {
+    color: #ccc; /* light gray for readability in dark mode */
+}
+body.dark button {
+    background: #3399ff;
+    color: white;
+}
+body.dark button:hover {
+    background: #0066cc;
+}
+body.dark .log-entry {
+    border-bottom: 1px solid #555;
+}
+
+body.dark .log-entry .bullet.success {
+    background-color: #0f0;
+}
+
+body.dark .log-entry .bullet.failure {
+    background-color: #f00;
+}
+body.dark .log-entry .timestamp {
+    color: #aaa;
+}
+
+body.dark .slow-entry {
+    background-color: #4b3b00;
+    border-bottom: 1px solid #ffa500;
+    color: #ffd966;
+}
+body.dark .slow-bullet {
+    background-color: #ffa500;
+}
+
+
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .row {
+        flex-direction: column;
+    }
+    .row > div {
+        width: 100%;
+    }
 }

@@ -10,7 +10,25 @@ It gets documented and you can view exactly what happened and when via the dashb
 4. Import the library at the top of your Express app's index file:
 ```const ObservabilityJS = require('/path/to/observability-js/ObservabilityJS')```
 
-## Example app.js Structure
+## Example Node.js App
+```
+const http = require('http');
+const obs = new ObservabilityJS();
+
+http.createServer((req, res) => {
+    const span = obs.startSpan({
+        method: req.method,
+        endpoint: req.url
+    });
+
+    res.statusCode = 200;
+    res.end('OK');
+
+    obs.endSpan(span, { statusCode: res.statusCode });
+}).listen(3000);
+```
+
+## Example Express App
 ```
 const express = require('express');
 const path = require('path');
@@ -28,7 +46,8 @@ app.use(express.json());
 // Initialize observability and automatically attach to app
 const obs = new ObservabilityJS({
     appToObserve: app,
-    logFile: './utils/observability/logs/observability.log' // point to logs subfolder
+    logFilePrefix: './utils/observability/logs/observability',
+    maxEntriesPerFile: 100
 });
 
 // Serve dashboard from the observability folder
