@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ObservabilityJS Dashboard</title>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+    <h1>ObservabilityJS Dashboard</h1>
+
+    <div class="stats">
+        <div class="card">
+            <h2 id="total">0</h2>
+            <p>Total Requests</p>
+        </div>
+        <div class="card">
+            <h2 id="successes">0</h2>
+            <p>Successes</p>
+        </div>
+        <div class="card">
+            <h2 id="failures">0</h2>
+            <p>Failures</p>
+        </div>
+        <div class="card">
+            <h2 id="successRate">0%</h2>
+            <p>Success Rate</p>
+        </div>
+        <div class="card">
+            <h2 id="failureRate">0%</h2>
+            <p>Failure Rate</p>
+        </div>
+    </div>
+
+    <button onclick="refreshStats()">Refresh Stats</button>
+
+    <script>
+        async function refreshStats() {
+            try {
+                const res = await fetch('/observability/stats'); // backend route to return stats JSON
+                const stats = await res.json();
+
+                document.getElementById('total').textContent = stats.total;
+                document.getElementById('successes').textContent = stats.successes;
+                document.getElementById('failures').textContent = stats.failures;
+                document.getElementById('successRate').textContent = stats.successRate + '%';
+                document.getElementById('failureRate').textContent = stats.failureRate + '%';
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        }
+
+        // Auto-refresh every 5 seconds
+        setInterval(refreshStats, 5000);
+
+        // Initial load
+        refreshStats();
+    </script>
+</body>
+</html>
