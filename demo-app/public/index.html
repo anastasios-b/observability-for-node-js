@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+        }
+        main {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        * {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .button {
+            cursor: pointer;
+            padding: 0.5vw 1vw;
+            width: fit-content;
+            background: black;
+            color: white;
+            user-select: none;
+            font-weight: bold;
+        }
+
+        .button.success {
+            background: palegreen;
+        }
+        .button.danger {
+            background: palevioletred;
+        }
+        .health.healthy {
+            color: palegreen;
+        }
+        .health.unhealthy {
+            color: palevioletred;
+        }
+
+        .req-type.get {
+            color: limegreen;
+        }
+        .req-type.post {
+            color: orange;
+        }
+        .req-type.put {
+            color: blue;
+        }
+        .req-type.patch {
+            color: lightskyblue;
+        }
+        .req-type.delete {
+            color: red;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1vw;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h2>Observability for Node.js & Express Demo App.</h2>
+        <h3>Tests:</h3>
+        <ul>
+            <li>
+                <div class="button" onclick="call421Route()">Call <span class="health unhealthy">misdirected request</span> route "request-421" (421)</div>
+            </li>
+            <li>
+                <div class="button" onclick="call401Route()">Call <span class="health unhealthy">unauthorized</span> route "request-401" (401)</div>
+            </li>
+            <li>
+                <div class="button" onclick="call404Route()">Call <span class="health unhealthy">non-existing</span> route "non-existing" (404)</div>
+            </li>
+            <li>
+                <div class="button" onclick="callGetSomething()">Call <span class="req-type get">GET</span> route "get-something" (200)</div>
+            </li>
+            <li>
+                <div class="button" onclick="callPostSomething()">Call <span class="req-type post">POST</span> route "post-something" (201)</div>
+            </li>
+            <li>
+                <div class="button" onclick="callPutSomething()">Call <span class="req-type put">PUT</span> route "put-something" (200)</div>
+            </li>
+            <li>
+                <div class="button" onclick="callPatchSomething()">Call <span class="req-type patch">PATCH</span> route "patch-something" (200)</div>
+            </li>
+            <li>
+                <div class="button" onclick="callDeleteSomething()">Call <span class="req-type delete">DELETE</span> route "delete-something" (204)</div>
+            </li>
+            <li>
+                <div class="button" onclick="callSlowEndpoint()">Call <span class="req-type get">GET</span> slow route "slow-endpoint" (200)</div>
+            </li>
+        </ul>
+    </main>
+
+    <script>
+        // ---------- ROUTE CALL FUNCTIONS ----------
+
+        async function call421Route() {
+            try {
+                const res = await fetch('/request-421');
+                console.log('421 response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function call401Route() {
+            try {
+                const res = await fetch('/request-401');
+                console.log('401 response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function call404Route() {
+            try {
+                const res = await fetch('/non-existing');
+                console.log('404 response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function callGetSomething() {
+            try {
+                const res = await fetch('/get-something');
+                console.log('GET response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function callPostSomething() {
+            try {
+                const res = await fetch('/post-something', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: 'data' })
+                });
+                console.log('POST response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function callPutSomething() {
+            try {
+                const res = await fetch('/put-something', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: 'data' })
+                });
+                console.log('PUT response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function callPatchSomething() {
+            try {
+                const res = await fetch('/patch-something', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: 'data' })
+                });
+                console.log('PATCH response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function callDeleteSomething() {
+            try {
+                const res = await fetch('/delete-something', {
+                    method: 'DELETE'
+                });
+                console.log('DELETE response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function callSlowEndpoint() {
+            try {
+                const res = await fetch('/slow-endpoint', {
+                    method: 'GET'
+                });
+                console.log('GET response:', res.status);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

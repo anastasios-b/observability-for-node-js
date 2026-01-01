@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ObservabilityJS Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+<h1>ObservabilityJS Dashboard</h1>
+
+<div class="stats">
+    <div class="card"><h2 id="total">0</h2><p>Total Requests</p></div>
+    <div class="card"><h2 id="successes">0</h2><p>Successes</p></div>
+    <div class="card"><h2 id="failures">0</h2><p>Failures</p></div>
+    <div class="card"><h2 id="successRate">0%</h2><p>Success Rate</p></div>
+    <div class="card"><h2 id="failureRate">0%</h2><p>Failure Rate</p></div>
+</div>
+
+<button onclick="refreshStats()">Refresh Stats</button>
+
+<div class="spacer"></div>
+
+<div class="row">
+    <div class="section slow-queries-section">
+        <h2>Slow Requests <span id="slowCount"></span></h2>
+        <button id="loadSlowBtn">Refresh Slow Requests</button>
+        <div id="slowContainer" class="records-container"></div>
+    </div>
+
+    <div class="section log-viewer-section">
+        <h2>Log Viewer</h2>
+        <button id="loadLogsBtn">Refresh Logs</button>
+        <div id="logContainer" class="records-container"></div>
+    </div>
+</div>
+
+<script>
+    // ------------- THEME -------------
+    function applyTheme() {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.body.classList.toggle('dark', prefersDark);
+    }
+    applyTheme();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+    // ------------- STATS -------------
+    async function refreshStats() {
+        try {
+            const res = await fetch('/observability/stats');
+            const stats = await res.json();
+
+            document.getElementById('total').textContent = stats.total;
+            document.getElementById('successes').textContent = stats.successes;
+            document.getElementById('failures').textContent = stats.failures;
+            document.getElementById('successRate').textContent = stats.successRate + '%';
+            document.getElementById('failureRate').textContent = stats.failureRate + '%';
+        } catch (err) {
+            console.error('Failed to fetch stats:', err);
+        }
+    }
+    setInterval(refreshStats, 5000);
+    refreshStats();
+
+    // ------------- SLOW REQUESTS -------------
+    const slowContainer = document.getElementById('slowContainer');
+    const slowCountElem = document.getElementById('slowCount');
+    const loadSlowBtn = document.getElementById('loadSlowBtn');
+    const slowThreshold = 500; // ms
+
+    async function refreshSlowEndpoints() {
+        try {
+            const res = await fetch('/observability/logs?page=1&perPage=100');
+            const data = await res.json();
+
+            slowContainer.innerHTML = '';
+
+            const slowLogs = data.logs.filter(log => log.latencyMs > slowThreshold);
+            slowCountElem.textContent = `(${slowLogs.length})`;
+
+            slowLogs.forEach(log => {
+                const entry = document.createElement('div');
+                entry.classList.add('slow-entry');
+
+                const bullet = document.createElement('div');
+                bullet.classList.add('slow-bullet'); // <- fixed class
+                entry.appendChild(bullet);
+
+                const text = document.createElement('span');
+                text.textContent = `[${formatTimestamp(log.timestamp)}] ${log.method} ${log.endpoint} => ${log.statusCode} (${log.latencyMs}ms)`;
+                entry.appendChild(text);
+
+                slowContainer.appendChild(entry);
+            });
+        } catch (err) {
+            console.error('Failed to load slow endpoints:', err);
+        }
+    }
+    setInterval(refreshSlowEndpoints, 5000);
+    loadSlowBtn.addEventListener('click', refreshSlowEndpoints);
+    refreshSlowEndpoints();
+
+    // ------------- LOGS -------------
+    const logContainer = document.getElementById('logContainer');
+    const loadLogsBtn = document.getElementById('loadLogsBtn');
+    let logPage = 1;
+    const perPage = 50;
+    let loadingLogs = false;
+
+    function formatTimestamp(iso) {
+        const d = new Date(iso);
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${d.getFullYear()} - ${monthNames[d.getMonth()]} - ${String(d.getDate()).padStart(2,'0')} at ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+    }
+
+    function renderLogEntry(log) {
+        const entry = document.createElement('div');
+        entry.classList.add('log-entry');
+
+        const bullet = document.createElement('div');
+        bullet.classList.add('log-bullet'); // <- use CSS class instead of inline
+        bullet.style.backgroundColor = log.statusCode < 400 ? 'green' : 'red';
+
+        const timestamp = document.createElement('span');
+        timestamp.classList.add('timestamp');
+        timestamp.textContent = `[${formatTimestamp(log.timestamp)}]`;
+
+        const content = document.createElement('span');
+        content.textContent = `${log.method} ${log.endpoint} => ${log.statusCode} (${log.latencyMs}ms)`;
+
+        entry.appendChild(bullet);
+        entry.appendChild(timestamp);
+        entry.appendChild(content);
+
+        return entry;
+    }
+
+    async function loadLogs(reset=false) {
+        if (loadingLogs) return;
+        loadingLogs = true;
+
+        try {
+            if (reset) {
+                logContainer.innerHTML = '';
+                logPage = 1;
+            }
+
+            const res = await fetch(`/observability/logs?page=${logPage}&perPage=${perPage}`);
+            const data = await res.json();
+
+            if (!data.logs || data.logs.length === 0) return;
+
+            data.logs.forEach(log => {
+                logContainer.appendChild(renderLogEntry(log));
+            });
+
+            logPage++;
+        } catch (err) {
+            console.error('Failed to load logs:', err);
+        } finally {
+            loadingLogs = false;
+        }
+    }
+
+    loadLogsBtn.addEventListener('click', () => loadLogs(true));
+
+    logContainer.addEventListener('scroll', () => {
+        if (logContainer.scrollTop + logContainer.clientHeight >= logContainer.scrollHeight - 20) {
+            loadLogs();
+        }
+    });
+
+    setInterval(() => loadLogs(true), 5000);
+    loadLogs(true);
+
+</script>
+</body>
+</html>
