@@ -25,12 +25,17 @@ A lightweight, self-hosted observability solution for Node.js applications. Moni
 
 ## Installation
 
-1. Install the package:
-   ```bash
-   npm install @your-org/observability-js
+1. Copy the `observability` folder to your project's `utils` directory:
+   ```
+   your-project/
+   ├── node_modules/
+   ├── utils/
+   │   └── observability/     # Copy this folder
+   ├── app.js
+   └── package.json
    ```
 
-2. Or copy the `observability` folder to your project's `utils` directory.
+2. The observability module is now ready to be imported in your project.
 
 ## Quick Start
 
@@ -198,8 +203,15 @@ Create point-in-time snapshots of your application's state for later analysis.
 
 ## License
 
-MIT
+MIT 
 
 ## Contributing
 
 Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) before submitting pull requests.
+
+## Author
+
+ **Anastasios Bolkas**
+
+- GitHub: [@anastasios-b](https://github.com/anastasios-b)
+- Portfolio: [anastasios-bolkas.tech](https://anastasios-bolkas.tech)
