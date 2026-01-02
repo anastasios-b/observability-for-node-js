@@ -4,7 +4,7 @@ const path = require('path');
 
 
 // Import ObservabilityJS from utils folder
-const ObservabilityJS = require('./utils/observability/ObservabilityJS');
+const observabilitySetup = require('./utils/observability/setup');
 
 
 
@@ -14,55 +14,17 @@ const PORT = 3000;
 app.use(express.json());
 
 
+// Serve main app frontend
+app.use(express.static(path.join(__dirname, 'public')));
+
+
 
 // ---------- START OF OBSERVABILITY SET UP ----------
 
-const obs = new ObservabilityJS({
-    appToObserve: app,
-    logFilePrefix: './utils/observability/logs/observability',
-    maxEntriesPerFile: 100,
-    ignorePaths: [
-        '/observability',
-        '/observability/stats',
-        '/.well-known/appspecific'
-    ]
-});
-
-// Serve observability dashboard
-app.use(
-    '/observability/dashboard',
-    express.static(path.join(__dirname, 'utils/observability'))
-);
-
-// Stats endpoint
-app.get('/observability/stats', (req, res) => {
-    res.json(obs.getStats());
-});
-
-// Paginated slow requests (>500ms)
-app.get('/observability/slow', (req, res) => {
-    const page = parseInt(req.query.page || '1');
-    const perPage = parseInt(req.query.perPage || '20');
-
-    const logs = obs.getSlowRequests({ thresholdMs: 500, page, perPage });
-    res.json({ logs });
-});
-
-// Read logs
-app.get('/observability/logs', (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const perPage = parseInt(req.query.perPage) || 50;
-
-    const logs = obs.readLogsPaginated({ page, perPage });
-    res.json({ page, perPage, logs });
-});
+// Mount all observability routes under /observability
+app.use('/observability', observabilitySetup(app));
 
 // ---------- END OF OBSERVABILITY SET UP ----------
-
-
-
-// Serve main app frontend
-app.use(express.static(path.join(__dirname, 'public')));
 
 
 

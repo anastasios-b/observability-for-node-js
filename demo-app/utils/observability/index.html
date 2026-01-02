@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ObservabilityJS Dashboard</title>
+    <title>Observability Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
 
-<h1>ObservabilityJS Dashboard</h1>
+<h1>Observability Dashboard</h1>
 
 <div class="stats">
     <div class="card"><h2 id="total">0</h2><p>Total Requests</p></div>
@@ -18,7 +18,30 @@
     <div class="card"><h2 id="failureRate">0%</h2><p>Failure Rate</p></div>
 </div>
 
-<button onclick="refreshStats()">Refresh Stats</button>
+<div class="spacer"></div>
+
+<div class="button-group">
+    <button onclick="refreshStats()">Refresh Stats</button>
+    <button onclick="showSnapshotModal()">Create Snapshot</button>
+</div>
+
+<!-- Snapshot Modal -->
+<div id="snapshotModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeSnapshotModal()">&times;</span>
+        <h2>Create Snapshot</h2>
+        <div class="form-group">
+            <label for="snapshotName">Snapshot Name:</label>
+            <input type="text" id="snapshotName" placeholder="Enter a name (optional)">
+        </div>
+        <button onclick="createSnapshot()">Create</button>
+        
+        <div class="snapshots-list">
+            <h3>Existing Snapshots</h3>
+            <div id="snapshotsContainer"></div>
+        </div>
+    </div>
+</div>
 
 <div class="spacer"></div>
 
@@ -26,12 +49,14 @@
     <div class="section slow-queries-section">
         <h2>Slow Requests <span id="slowCount"></span></h2>
         <button id="loadSlowBtn">Refresh Slow Requests</button>
+        <div class="spacer"></div>
         <div id="slowContainer" class="records-container"></div>
     </div>
 
     <div class="section log-viewer-section">
         <h2>Log Viewer</h2>
         <button id="loadLogsBtn">Refresh Logs</button>
+        <div class="spacer"></div>
         <div id="logContainer" class="records-container"></div>
     </div>
 </div>
@@ -84,7 +109,7 @@
                 entry.classList.add('slow-entry');
 
                 const bullet = document.createElement('div');
-                bullet.classList.add('slow-bullet'); // <- fixed class
+                bullet.classList.add('slow-bullet');
                 entry.appendChild(bullet);
 
                 const text = document.createElement('span');
@@ -174,6 +199,147 @@
     setInterval(() => loadLogs(true), 5000);
     loadLogs(true);
 
+    // ------------- SNAPSHOTS -------------
+    const modal = document.getElementById('snapshotModal');
+    
+    function showSnapshotModal() {
+        modal.style.display = 'block';
+        loadSnapshots();
+    }
+    
+    function closeSnapshotModal() {
+        modal.style.display = 'none';
+    }
+    
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            closeSnapshotModal();
+        }
+    }
+    
+    async function createSnapshot() {
+        const nameInput = document.getElementById('snapshotName');
+        const name = nameInput.value.trim();
+        
+        try {
+            const response = await fetch('/observability/snapshots', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: name || undefined })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to create snapshot');
+            }
+            
+            const result = await response.json();
+            alert(`Snapshot created: ${result.name}`);
+            loadSnapshots();
+            nameInput.value = '';
+        } catch (error) {
+            console.error('Error creating snapshot:', error);
+            alert('Failed to create snapshot: ' + error.message);
+        }
+    }
+    
+    async function loadSnapshots() {
+        const container = document.getElementById('snapshotsContainer');
+        container.innerHTML = '<p>Loading snapshots...</p>';
+        
+        try {
+            const response = await fetch('/observability/snapshots');
+            if (!response.ok) throw new Error('Failed to load snapshots');
+            
+            const snapshots = await response.json();
+            
+            if (snapshots.length === 0) {
+                container.innerHTML = '<p>No snapshots available.</p>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            snapshots.forEach(snapshot => {
+                const item = document.createElement('div');
+                item.className = 'snapshot-item';
+                
+                const name = document.createElement('h4');
+                name.textContent = snapshot.name || 'Unnamed Snapshot';
+                
+                const meta = document.createElement('div');
+                meta.className = 'snapshot-meta';
+                meta.textContent = `Created: ${new Date(snapshot.createdAt).toLocaleString()} • ${snapshot.stats.total} requests`;
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.textContent = 'Download';
+                downloadBtn.onclick = () => downloadSnapshot(snapshot.id, snapshot.name || 'snapshot');
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => deleteSnapshot(snapshot.id);
+                
+                const actions = document.createElement('div');
+                actions.style.marginTop = '10px';
+                actions.style.display = 'flex';
+                actions.style.gap = '10px';
+                actions.appendChild(downloadBtn);
+                actions.appendChild(deleteBtn);
+                
+                item.appendChild(name);
+                item.appendChild(meta);
+                item.appendChild(actions);
+                
+                container.appendChild(item);
+            });
+        } catch (error) {
+            console.error('Error loading snapshots:', error);
+            container.innerHTML = '<p>Error loading snapshots. Please try again.</p>';
+        }
+    }
+    
+    async function downloadSnapshot(id, name) {
+        try {
+            const response = await fetch(`/observability/snapshots/${id}/export`);
+            if (!response.ok) throw new Error('Failed to download snapshot');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${name || 'snapshot'}_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        } catch (error) {
+            console.error('Error downloading snapshot:', error);
+            alert('Failed to download snapshot: ' + error.message);
+        }
+    }
+    
+    async function deleteSnapshot(id) {
+        if (!confirm('Are you sure you want to delete this snapshot? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/observability/snapshots/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete snapshot');
+            }
+            
+            loadSnapshots();
+        } catch (error) {
+            console.error('Error deleting snapshot:', error);
+            alert('Failed to delete snapshot: ' + error.message);
+        }
+    }
 </script>
 </body>
 </html>
