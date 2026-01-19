@@ -21,8 +21,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- START OF OBSERVABILITY SET UP ----------
 
-// Mount all observability routes under /observability
-app.use('/observability', observabilitySetup(app));
+// All observability routes are mounted under /observability
+app.use('/observability', observabilitySetup(app, PORT));
 
 // ---------- END OF OBSERVABILITY SET UP ----------
 
@@ -66,7 +66,7 @@ app.put('/put-something', (req, res) => {
 
 // PATCH route
 app.patch('/patch-something', (req, res) => {
-    
+
     res.status(200).json({ message: 'PATCHed something' });
 });
 

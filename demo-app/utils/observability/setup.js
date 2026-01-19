@@ -2,14 +2,14 @@ const express = require('express');
 const ObservabilityJS = require('./ObservabilityJS');
 const path = require('path');
 
-module.exports = (app) => {
+module.exports = (app, port) => {
     const router = express.Router();
 
     // Initialize observability instance
     const obs = new ObservabilityJS({
         appToObserve: app,
         logFilePrefix: path.join(__dirname, 'logs/observability'),
-        maxEntriesPerFile: 100,
+        maxEntriesPerLogFile: 100, // max log entries to be written in each file
         ignorePaths: [
             '/observability',           // ignore observability routes
             '/.well-known/appspecific'  // ignore certain browser requests
@@ -53,9 +53,9 @@ module.exports = (app) => {
             res.status(201).json(snapshot);
         } catch (error) {
             console.error('Error creating snapshot:', error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Failed to create snapshot',
-                details: error.message 
+                details: error.message
             });
         }
     });
@@ -67,9 +67,9 @@ module.exports = (app) => {
             res.json(snapshots);
         } catch (error) {
             console.error('Error listing snapshots:', error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Failed to list snapshots',
-                details: error.message 
+                details: error.message
             });
         }
     });
@@ -79,17 +79,17 @@ module.exports = (app) => {
         try {
             const { id } = req.params;
             const snapshot = obs.getSnapshot(id);
-            
+
             if (!snapshot) {
                 return res.status(404).json({ error: 'Snapshot not found' });
             }
-            
+
             res.json(snapshot);
         } catch (error) {
             console.error('Error getting snapshot:', error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Failed to get snapshot',
-                details: error.message 
+                details: error.message
             });
         }
     });
@@ -107,9 +107,9 @@ module.exports = (app) => {
             res.send(JSON.stringify(snapshot, null, 2));
         } catch (error) {
             console.error(`Error exporting snapshot ${req.params.id}:`, error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Failed to export snapshot',
-                details: error.message 
+                details: error.message
             });
         }
     });
@@ -124,9 +124,9 @@ module.exports = (app) => {
             res.status(204).send();
         } catch (error) {
             console.error(`Error deleting snapshot ${req.params.id}:`, error);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Failed to delete snapshot',
-                details: error.message 
+                details: error.message
             });
         }
     });

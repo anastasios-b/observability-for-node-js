@@ -1,12 +1,25 @@
+// ObservabilityJS
+// What this system does guarantee:
+// 1. 
+// 2. 
+// 3. 
+
+// What this system does not guarantee:
+// 1.
+// 2.
+// 3.
+
 const fs = require('fs');
 const path = require('path');
 
-// Generate a simple ID based on timestamp and random number
+
+
+// START - Helper functions
+
 function generateSimpleId() {
     return `snap_${Date.now()}_${Math.floor(Math.random() * 10000).toString(36)}`;
 }
 
-// Helper function to ensure directory exists
 function ensureDirectoryExists(dirPath) {
     try {
         if (!fs.existsSync(dirPath)) {
@@ -19,16 +32,22 @@ function ensureDirectoryExists(dirPath) {
     }
 }
 
+// END - Helper functions
+
+
+
+// START - Main class
+
 class ObservabilityJS {
     constructor({
         appToObserve = null,
         logFilePrefix = 'observability',
-        maxEntriesPerFile = 100,
+        maxEntriesPerLogFile = 100,
         ignorePaths = []
     } = {}) {
         this.appToObserve = appToObserve;
         this.logFilePrefix = logFilePrefix;
-        this.maxEntriesPerFile = maxEntriesPerFile;
+        this.maxEntriesPerLogFile = maxEntriesPerLogFile;
         this.ignorePaths = ignorePaths;
 
         this.currentFileIndex = 1;
@@ -51,8 +70,8 @@ class ObservabilityJS {
         return path.resolve(`${this.logFilePrefix}_${index}.log`);
     }
 
-    rotateIfNeeded() {
-        if (this.currentEntryCount < this.maxEntriesPerFile) return;
+    incrementLogFileIndexIfNeeded() {
+        if (this.currentEntryCount < this.maxEntriesPerLogFile) return;
 
         this.currentFileIndex++;
         this.currentEntryCount = 0;
@@ -73,7 +92,7 @@ class ObservabilityJS {
     }
 
     writeLog(entry) {
-        this.rotateIfNeeded();
+        this.incrementLogFileIndexIfNeeded();
 
         try {
             const filePath = this.logFilePath;
@@ -89,7 +108,7 @@ class ObservabilityJS {
             if (lastLine) {
                 try {
                     const lastEntry = JSON.parse(lastLine);
-                    const sameRequest = 
+                    const sameRequest =
                         lastEntry.method === entry.method &&
                         lastEntry.endpoint === entry.endpoint &&
                         lastEntry.statusCode === entry.statusCode;
@@ -154,7 +173,7 @@ class ObservabilityJS {
     }
 
     /* ===============================
-       EXPRESS SUPPORT (OPTIONAL)
+       EXPRESS SUPPORT
        =============================== */
 
     attachExpressMiddleware() {
@@ -310,7 +329,7 @@ class ObservabilityJS {
         const logs = this.readLogs().slice(0, limit);
         const stats = this.getStats();
         const slowEndpoints = this.getSlowRequests({ thresholdMs: slowThresholdMs, page: 1, perPage: 100 });
-        
+
         return {
             metadata: {
                 exportedAt: new Date().toISOString(),
@@ -333,10 +352,10 @@ class ObservabilityJS {
     exportToFile(filePath, options = {}) {
         const data = this.exportData(options);
         const dir = path.dirname(filePath);
-        
+
         this.ensureLogDirectoryExists(filePath);
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-        
+
         return filePath;
     }
 
@@ -360,7 +379,7 @@ class ObservabilityJS {
     createSnapshot(name) {
         try {
             const snapshotsDir = this.getSnapshotsDir();
-            
+
             // Ensure the directory exists before proceeding
             if (!ensureDirectoryExists(snapshotsDir)) {
                 throw new Error('Failed to create snapshots directory');
@@ -369,7 +388,7 @@ class ObservabilityJS {
             const snapshotId = generateSimpleId();
             const timestamp = new Date().toISOString();
             const snapshotName = name || `snapshot_${timestamp.replace(/[:.]/g, '-')}`;
-            
+
             const snapshotData = this.exportData();
             snapshotData.metadata = snapshotData.metadata || {};
             snapshotData.metadata.snapshotId = snapshotId;
@@ -378,10 +397,10 @@ class ObservabilityJS {
 
             const fileName = `${snapshotName}.json`;
             const filePath = path.join(snapshotsDir, fileName);
-            
+
             // Ensure the file can be written
             fs.writeFileSync(filePath, JSON.stringify(snapshotData, null, 2));
-            
+
             return {
                 id: snapshotId,
                 name: snapshotName,
@@ -436,9 +455,9 @@ class ObservabilityJS {
     getSnapshot(idOrName) {
         const snapshots = this.listSnapshots();
         const snapshot = snapshots.find(s => s.id === idOrName || s.name === idOrName);
-        
+
         if (!snapshot) return null;
-        
+
         try {
             const content = fs.readFileSync(snapshot.path, 'utf8');
             return JSON.parse(content);
@@ -456,9 +475,9 @@ class ObservabilityJS {
     deleteSnapshot(idOrName) {
         const snapshots = this.listSnapshots();
         const snapshot = snapshots.find(s => s.id === idOrName || s.name === idOrName);
-        
+
         if (!snapshot) return false;
-        
+
         try {
             fs.unlinkSync(snapshot.path);
             return true;
@@ -469,4 +488,8 @@ class ObservabilityJS {
     }
 }
 
+// END - Main class
+
+
+// Export the main class
 module.exports = ObservabilityJS;
